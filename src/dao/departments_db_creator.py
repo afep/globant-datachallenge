@@ -15,3 +15,7 @@ class Departments_Db_Creator(Creator):
                 new_department = Department(id=row['column1'], department=row['column2'])
             self.conn.add(new_department)
         self.conn.commit()
+
+    def get_all_data(self):
+        departments_data = self.conn.query(Department).all()
+        return departments_data

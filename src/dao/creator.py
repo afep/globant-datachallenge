@@ -13,3 +13,10 @@ class Creator(ABC):
         Method definition to implement insert data 
         """
         pass
+    
+    @abstractmethod
+    def get_all_data(self):
+        """
+        Method definition to implement select data 
+        """
+        pass

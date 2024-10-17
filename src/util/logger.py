@@ -1,9 +1,14 @@
-import boto3
 from io import StringIO
+import util.aws_s3 as aws_s3
 import util.transversal as transversal
-
-# AWS S3 client
-s3 = boto3.client('s3')
+import logging
+logging.basicConfig(
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M",
+)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def generate_s3_file_path(base_path, log_folder="error_log", extension=".csv"):
     """
@@ -27,6 +32,7 @@ def save_file_to_s3(df_data, bucket, s3_file_path):
     
     Args:
         df_data (pd.DataFrame): The DataFrame containing the data.
+        buket (str): Name of bucket to save data
         s3_file_path (str): The file path where the CSV will be stored in S3.
     """
     # Clean the DataFrame
@@ -37,9 +43,8 @@ def save_file_to_s3(df_data, bucket, s3_file_path):
     cleaned_df.to_csv(csv_buffer, index=False)
     
     # Upload the CSV to S3
-    s3.put_object(Bucket=bucket, Key=s3_file_path, Body=csv_buffer.getvalue())
-    
-    print(f"File log saved as CSV to s3://{bucket}/{s3_file_path}")
+    aws_s3.save_to_s3(Bucket=bucket, Key=s3_file_path, Body=csv_buffer.getvalue())
+    logger.info(f"File log saved as CSV to s3://{bucket}/{s3_file_path}")
 
 def save_error_log(df_errors, bucket_name, base_file_name):
     """

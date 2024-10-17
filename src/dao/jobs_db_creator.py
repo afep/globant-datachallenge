@@ -15,3 +15,7 @@ class Jobs_Db_Creator(Creator):
                 new_job = Job(id=row['column1'], job=row['column2'])
             self.conn.add(new_job)
         self.conn.commit()
+
+    def get_all_data(self):
+        jobs_data = self.conn.query(Job).all()
+        return jobs_data
