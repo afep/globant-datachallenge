@@ -1,0 +1,287 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Datachallenge API",
+    "version": "1.0",
+    "description": "Documentation for Globant Datachallenge API"
+  },
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Enter your Bearer token as `Bearer <token>`"
+    }
+  },
+  "tags": [
+    { "name": "Auth", "description": "Authentication-related endpoints" },
+    { "name": "Upload", "description": "Data load operations" }
+  ],
+  "paths": {
+    "/login": {
+      "get": {
+        "summary": "User login",
+        "tags": ["Auth"],
+        "parameters": [
+          {
+            "name": "username",
+            "in": "formData",
+            "required": "True",
+            "type": "string"
+          },
+          {
+            "name": "password",
+            "in": "formData",
+            "required": "True",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful, returns a Bearer token",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "token": {
+                  "type": "string",
+                  "description": "JWT Bearer token"
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "summary": "Upload a file specifying its type",
+        "tags": ["Upload"],
+        "parameters": [
+          {
+            "name": "file_type",
+            "in": "formData",
+            "required": "True",
+            "type": "string"
+          },
+          {
+            "name": "file",
+            "in": "formData",
+            "required": "True",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": { "description": "File uploaded successfully" },
+          "400": { "description": "Invalid file or missing file_type" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/jobs/upload": {
+      "post": {
+        "summary": "Upload job file",
+        "tags": ["Upload"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "formData",
+            "required": "True",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": { "description": "File uploaded successfully" },
+          "400": { "description": "Error in the file" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/departments/upload": {
+      "post": {
+        "summary": "Upload department file",
+        "tags": ["Upload"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "formData",
+            "required": "True",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": { "description": "File uploaded successfully" },
+          "400": { "description": "Error in the file" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/employees/upload": {
+      "post": {
+        "summary": "Upload employee file",
+        "tags": ["Upload"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "formData",
+            "required": "True",
+            "type": "file"
+          }
+        ],
+        "responses": {
+          "200": { "description": "File uploaded successfully" },
+          "400": { "description": "Error in the file" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/backup": {
+      "get": {
+        "summary": "Create backups for all tables",
+        "tags": ["Backup"],
+        "responses": {
+          "200": { "description": "Backup completed for all tables" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/restore": {
+      "get": {
+        "summary": "Restore tables from backups",
+        "tags": ["Backup"],
+        "responses": {
+          "200": { "description": "Restore completed for all tables" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/employees/by_quarter": {
+      "get": {
+        "summary": "Get employees hired by quarter",
+        "tags": ["Reports"],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": "False",
+            "type": "integer",
+            "default": 2021,
+            "description": "Year to filter employee hiring data"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": "False",
+            "type": "integer",
+            "default": 1,
+            "description": "Page number for pagination"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": "False",
+            "type": "integer",
+            "default": 10,
+            "description": "Number of records per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of employees hired per quarter, grouped by job and department",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "department": {
+                        "type": "string",
+                        "example": "Supply Chain"
+                      },
+                      "job": { "type": "string", "example": "Manager" },
+                      "Q1": { "type": "integer", "example": 3 },
+                      "Q2": { "type": "integer", "example": 5 },
+                      "Q3": { "type": "integer", "example": 2 },
+                      "Q4": { "type": "integer", "example": 1 }
+                    }
+                  }
+                },
+                "page": { "type": "integer", "example": 1 },
+                "per_page": { "type": "integer", "example": 10 },
+                "total_pages": { "type": "integer", "example": 5 },
+                "total_items": { "type": "integer", "example": 50 }
+              }
+            }
+          },
+          "400": { "description": "Invalid request parameters" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/departments/hired_above_mean": {
+      "get": {
+        "summary": "Get departments that hired above the mean",
+        "tags": ["Reports"],
+        "parameters": [
+          {
+            "name": "year",
+            "in": "query",
+            "required": "False",
+            "type": "integer",
+            "default": 2021,
+            "description": "Year to filter employee hiring data"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": "False",
+            "type": "integer",
+            "default": 1,
+            "description": "Page number for pagination"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": "False",
+            "type": "integer",
+            "default": 50,
+            "description": "Number of records per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of departments that hired more employees than the mean",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer", "example": 1 },
+                      "department": {
+                        "type": "string",
+                        "example": "Supply Chain"
+                      },
+                      "hired": { "type": "integer", "example": 45 }
+                    }
+                  }
+                },
+                "page": { "type": "integer", "example": 1 },
+                "per_page": { "type": "integer", "example": 50 },
+                "total_pages": { "type": "integer", "example": 2 },
+                "total_items": { "type": "integer", "example": 60 }
+              }
+            }
+          },
+          "400": { "description": "Invalid request parameters" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    }
+  }
+}
