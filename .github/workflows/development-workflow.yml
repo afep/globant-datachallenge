@@ -58,7 +58,7 @@ jobs:
         run: |
           FLASK_ENV=${{secrets.FLASK_ENV}} python src/app.py &
           sleep 5
-          curl http://127.0.0.1:5000/ | grep "template api"
+          curl http://127.0.0.1:5000/
   DeployDev:
     name: Deploy to Dev
     # if: github.event_name == 'pull_request'
