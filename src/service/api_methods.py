@@ -1,8 +1,12 @@
 from flask import request, jsonify
-from service.sql_alchemy.database import create_database_session, truncate_table
+from service.flask_sqlalchemy.api_database import db
+from sqlalchemy.orm import Query
+from typing import Any, Dict, List, Tuple
+from sqlalchemy import text
 from dao.jobs_db_creator import Jobs_Db_Creator
 from dao.departments_db_creator import Departments_Db_Creator
 from dao.employees_db_creator import Employees_Db_Creator
+from dao.queries_db_reports import Queries_Db_Reports
 from validation.data_validation import validate_data
 from util.logger import save_error_log
 from util.aws_s3 import save_to_s3, get_from_s3
@@ -47,17 +51,18 @@ def startup_event():
     Logs a message indicating that the database connection has started.
     """
     global DB_CREATORS
-    with create_database_session() as db:
-        jobs_db_creator = Jobs_Db_Creator(db)
-        departments_db_creator = Departments_Db_Creator(db)
-        employees_db_creator = Employees_Db_Creator(db)
+    jobs_db_creator = Jobs_Db_Creator(db.session)
+    departments_db_creator = Departments_Db_Creator(db.session)
+    employees_db_creator = Employees_Db_Creator(db.session)
+    queries_db_report = Queries_Db_Reports(db.session)
     # Strategy to selecct the data table
     DB_CREATORS = {
         "job": jobs_db_creator,
         "department": departments_db_creator,
-        "employee": employees_db_creator
+        "employee": employees_db_creator,
+        "reports": queries_db_report
     }
-    logger.info("DB Conn Startup")
+    logger.info("DB Connections Startup")
 
 def upload_file(file_type):
     """Upload a specified file type to the database.
@@ -255,3 +260,82 @@ def restore_table_from_s3_avro(file_type, truncate_option=False):
     except Exception as e:
         logger.error(f"Message: {e}")
         return f"Error in restore for {file_type}: {e}"
+    
+def truncate_table(table_name) -> None:
+    """
+    Truncate a specific table and reset its identity.
+
+    This function performs a raw SQL execution to truncate a given table, 
+    removing all rows and resetting the primary key sequence (identity).
+
+    Args:
+        table_name (str): The name of the table to truncate.
+
+    Raises:
+        SQLAlchemyError: If there is an issue executing the SQL command.
+    
+        Example:
+        truncate_table('data_challenge.employees')
+    """
+    db.session.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE"))
+    db.session.commit()
+    
+def execute_query(function_name, *args, **kwargs):
+    """
+    Execute a query method dynamically by its name and return the result.
+
+    This function retrieves the appropriate query method from the reports
+    database creator and invokes it with the provided arguments.
+
+    Args:
+        function_name (str): The name of the query function to execute.
+        *args: Positional arguments to pass to the query function.
+        **kwargs: Keyword arguments to pass to the query function.
+
+    Returns:
+        Any: The result of the query execution.
+
+    Raises:
+        AttributeError: If the specified method does not exist.
+
+    Example:
+        result = execute_query("get_employees_by_quarter", 2021)
+    """
+    db_report = DB_CREATORS.get("reports")
+    # getattr to call methon name dinamically
+    query_method = getattr(db_report, function_name, None)
+
+    if query_method is None:
+        raise AttributeError(f"Method '{function_name}' not found in {db_report}")
+
+    query_data = query_method(*args, **kwargs)
+    return(query_data)
+
+def paginate_query(query: Query, page: int, per_page: int) -> Tuple[List[Any], Dict[str, Any]]:
+    """
+    Apply pagination to a SQLAlchemy query and return the results with metadata.
+
+    This function paginates the given query and returns both the items in the 
+    specified page and a dictionary containing pagination metadata.
+
+    Args:
+        query (Query): The SQLAlchemy query to paginate.
+        page (int): The page number to retrieve.
+        per_page (int): The number of items per page.
+
+    Returns:
+        Tuple[List[Any], Dict[str, Any]]: 
+            A tuple containing the items in the requested page and the 
+            pagination metadata (page number, items per page, total pages, and total items).
+
+    Example:
+        items, metadata = paginate_query(employee_query, page=1, per_page=10)
+    """
+    paginated_result = query.paginate(page=page, per_page=per_page, error_out=False)
+    metadata = {
+        'page': paginated_result.page,
+        'per_page': paginated_result.per_page,
+        'total_pages': paginated_result.pages,
+        'total_items': paginated_result.total
+    }
+    return paginated_result.items, metadata

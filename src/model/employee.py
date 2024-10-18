@@ -1,7 +1,7 @@
 #from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String
 
-from service.sql_alchemy.database import Base
+from service.sqlalchemy.database import Base
 
 class Employee(Base):
     __tablename__ = 'employees'

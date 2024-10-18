@@ -29,9 +29,3 @@ def create_database_session():
 def create_database_tables() -> None:
     """Creates a database from the models."""
     Base.metadata.create_all(engine)
-
-def truncate_table(table_name) -> None:
-    session = SessionLocal()
-    # Truncate using raw SQL with table name
-    session.execute(text(f"TRUNCATE TABLE {table_name} RESTART IDENTITY CASCADE"))
-    session.commit()

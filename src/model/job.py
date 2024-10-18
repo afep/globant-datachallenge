@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String
 
-from service.sql_alchemy.database import Base
+from service.sqlalchemy.database import Base
 
 class Job(Base):
     __tablename__ = 'jobs'

@@ -1,15 +1,21 @@
 from flask import Flask, request, jsonify, make_response
-from service.api_methods import startup_event, fake_users_db, upload_file, backup_table_to_avro, restore_table_from_s3_avro
+from service.flask_sqlalchemy.api_database import db
+from service.api_methods import startup_event, fake_users_db, upload_file, paginate_query 
+from service.api_methods import backup_table_to_avro, restore_table_from_s3_avro, execute_query
 import datetime
-from datetime import timezone
 import jwt
 from security.auth_middleware import token_required
 from flask_swagger_ui import get_swaggerui_blueprint
+import json
 
-DB_CREATORS = None
 file_types = ["job", "department", "employee"]
 
 app = Flask(__name__)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Gl0b4nt12345@globant-datachallenge.c58ckue6w9yw.us-east-1.rds.amazonaws.com:5432/postgres'
+
+db.init_app(app)
+startup_event()
 
 # Security using JWT Token
 app.config["JWT_SECRET_KEY"] = "datachallenge-secret-key"  # This will be my secret key
@@ -31,156 +37,8 @@ def spec():
     Returns:
         jsonify: A JSON representation of the Swagger specification.
     """
-    swag = {
-        'swagger': '2.0',
-        'info': {
-            'title': 'Datachallenge API',
-            'version': '1.0',
-            'description': 'Documentation for Globant Datachallenge API'
-        },
-        'securityDefinitions': {
-            'BearerAuth': {
-                'type': 'apiKey',
-                'name': 'Authorization',
-                'in': 'header',
-                'description': 'Enter your Bearer token as `Bearer <token>`'
-            }
-        },
-        'tags': [
-            {'name': 'Auth', 'description': 'Authentication-related endpoints'},
-            {'name': 'Upload', 'description': 'Data load operations'}
-        ],
-        'paths': {
-            '/login': {
-                'get': {
-                    'summary': 'User login',
-                    'tags': ['Auth'],
-                    'parameters': [
-                        {
-                            'name': 'username',
-                            'in': 'formData',
-                            'required': True,
-                            'type': 'string'
-                        },
-                        {
-                            'name': 'password',
-                            'in': 'formData',
-                            'required': True,
-                            'type': 'string'
-                        }
-                    ],
-                    'responses': {
-                        200: {
-                            'description': 'Login successful, returns a Bearer token',
-                            'schema': {
-                                'type': 'object',
-                                'properties': {
-                                    'token': {
-                                        'type': 'string',
-                                        'description': "JWT Bearer token"
-                                    }
-                                }
-                            }
-                        },
-                        401: {'description': 'Invalid credentials'},
-                        500: {'description': 'Internal server error'}
-                    }
-                }
-            },
-            '/upload': {
-                'post': {
-                    'summary': 'Upload a file specifying its type',
-                    'tags': ['Upload'],
-                    'parameters': [
-                        {'name': 'file_type', 'in': 'formData', 'required': True, 'type': 'string'},
-                        {'name': 'file', 'in': 'formData', 'required': True, 'type': 'file'}
-                    ],
-                    'responses': {
-                        200: {'description': 'File uploaded successfully'},
-                        400: {'description': 'Invalid file or missing file_type'},
-                        500: {'description': 'Internal server error'}
-                    }
-                }
-            },
-            '/jobs/upload': {
-                'post': {
-                    'summary': 'Upload job file',
-                    'tags': ['Upload'],
-                    'parameters': [
-                        {
-                            'name': 'file',
-                            'in': 'formData',
-                            'required': True,
-                            'type': 'file'
-                        }
-                    ],
-                    'responses': {
-                        200: {'description': 'File uploaded successfully'},
-                        400: {'description': 'Error in the file'},
-                        500: {'description': 'Internal server error'}
-                    }
-                }
-            },
-            '/departments/upload': {
-                'post': {
-                    'summary': 'Upload department file',
-                    'tags': ['Upload'],
-                    'parameters': [
-                        {
-                            'name': 'file',
-                            'in': 'formData',
-                            'required': True,
-                            'type': 'file'
-                        }
-                    ],
-                    'responses': {
-                        200: {'description': 'File uploaded successfully'},
-                        400: {'description': 'Error in the file'},
-                        500: {'description': 'Internal server error'}
-                    }
-                }
-            },
-            '/employees/upload': {
-                'post': {
-                    'summary': 'Upload employee file',
-                    'tags': ['Upload'],
-                    'parameters': [
-                        {
-                            'name': 'file',
-                            'in': 'formData',
-                            'required': True,
-                            'type': 'file'
-                        }
-                    ],
-                    'responses': {
-                        200: {'description': 'File uploaded successfully'},
-                        400: {'description': 'Error in the file'},
-                        500: {'description': 'Internal server error'}
-                    }
-                }
-            },
-            '/backup': {
-                'get': {
-                    'summary': 'Create backups for all tables',
-                    'tags': ['Backup'],
-                    'responses': {
-                        200: {'description': 'Backup completed for all tables'},
-                        500: {'description': 'Internal server error'}
-                    }
-                }
-            },
-            '/restore': {
-                'get': {
-                    'summary': 'Restore tables from backups',
-                    'tags': ['Backup'],
-                    'responses': {
-                        200: {'description': 'Restore completed for all tables'},
-                        500: {'description': 'Internal server error'}
-                    }
-                }
-            }
-        }
-    }
+    with open("src/swagger_spec.json") as spec_file:
+        swag = json.load(spec_file)
     return jsonify(swag)
 
 @app.route("/login")
@@ -196,7 +54,7 @@ def login():
     """
     auth = request.authorization
     if auth and auth.password == fake_users_db[auth.username]["password"]:
-        token = jwt.encode({'user': auth.username, 'exp': datetime.datetime.now(timezone.utc) + 
+        token = jwt.encode({'user': auth.username, 'exp': datetime.datetime.now(datetime.timezone.utc) + 
                             datetime.timedelta(seconds=1800)}, app.config['JWT_SECRET_KEY'])
         return jsonify({'token': f'{token}'})
     return make_response('Could not Verify', 401, {'WWW-Authenticate': 'Basic realm ="Login Required"'})
@@ -278,8 +136,68 @@ def restore_database():
     messages = [restore_table_from_s3_avro(file_type) for file_type in file_types]
     return jsonify({"message": " - ".join(messages)}), 200
 
+@app.route('/employees/by_quarter', methods=['GET'])
+def hired_employees_by_quarter():
+    """
+    Get the number of employees hired for each job and department in one year (Ex. 2021) divided by quarter.
+    """
+    # Get pagination parameters by request
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    query_year = request.args.get('year', 2021, type=str)
+
+    query = execute_query("get_employees_by_quarter", query_year)
+     
+    # Apply pagination
+    items, metadata = paginate_query(query, page, per_page)
+    
+    # Serialización del resultado
+    result = [
+        {
+            'department': row.department,
+            'job': row.job,
+            'Q1': row.Q1,
+            'Q2': row.Q2,
+            'Q3': row.Q3,
+            'Q4': row.Q4
+        }
+        for row in items
+    ]
+
+    return jsonify({'data': result, **metadata}), 200
+
+@app.route('/departments/hired_above_mean', methods=['GET'])
+def get_departments_hired_above_mean():
+        # Get pagination parameters by request
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+    query_year = request.args.get('year', 2021, type=str)
+
+    # Step 1: Calculate the mean number of employees hired in 2021
+    mean_query = execute_query("get_employees_mean", query_year)
+    mean_hired = mean_query.scalar()
+    if mean_hired is None:
+        mean_hired = 0
+    # Step 2: Get departments that hired more than the mean
+    query =  execute_query("get_departments_above_mean", query_year, mean_hired)
+
+    # Apply pagination
+    items, metadata = paginate_query(query, page, per_page)
+
+    # Step 5: Format the results
+    result = [
+        {
+            "id": row.id,
+            "department": row.department,
+            "hired": row.hired
+        }
+        for row in items
+    ]
+
+    return jsonify({'data': result, **metadata}), 200
+
+
 if __name__ == '__main__':
-    startup_event()
     app.run(debug=True)
     #app.run(host='0.0.0.0', port=5000)
 
