@@ -1,13 +1,12 @@
-from service.sql_alchemy.database import create_database_session, create_database_tables
-import psycopg2
+from service.sqlalchemy.database import create_database_session, create_database_tables
 import traceback
 from validation.data_validation import validate_data, jobs_schema, departments_schema, employees_schema
 from dao.jobs_db_creator import Jobs_Db_Creator
 from dao.departments_db_creator import Departments_Db_Creator
 from dao.employees_db_creator import Employees_Db_Creator
-from util.logger import save_error_log
 import util.transversal as utilities
-import os
+from util.logger import save_error_log
+from util.aws_s3 import read_file
 import logging
 logging.basicConfig(
     format="{asctime} - {levelname} - {message}",
@@ -25,10 +24,7 @@ db_user = 'postgres'
 db_password = 'Gl0b4nt12345'
 db_port = '5432'
 
-#TODO: Leave just this line
-#file_types = ['job', 'department', 'employee']
-file_types = ['employee']
-#schemas_map = [jobs_schema, departments_schema, employees_schema]
+file_types = ['job', 'department', 'employee']
 
 file_keys_map = {
     'job': 'jobs/jobs.csv',
@@ -57,7 +53,7 @@ if __name__ == '__main__':
 
             for file_type in file_types:
                 file_name = file_keys_map.get(file_type)
-                df_data = utilities.read_file(bucket, file_name)
+                df_data = read_file(bucket, file_name)
                 if file_type == 'employee':
                     df_data = utilities.cast_fields(df_data=df_data, 
                                             string_columns=['column2', 'column3'], 
@@ -68,7 +64,6 @@ if __name__ == '__main__':
                 if dao_class and schema_definition:
                     dao_db = dao_class(db)
                     df_input, df_errors = validate_data(df_data, schema_definition)
-                    #dao_db.factory_create_table()
                     dao_db.factory_orm_insert_data(df_input)
                     if df_errors.size > 0:
                         save_error_log(df_errors, bucket, file_name)
@@ -79,9 +74,4 @@ if __name__ == '__main__':
         logger.error("Something went wrong: " + str(e))
         logger.error(traceback.format_exc())
     finally:
-        # if conn:
-        #     conn.close()
         logger.debug('PROCESS FINISHED')
-
-# RUN COMMAND:
-# python -m src.main_etl_process

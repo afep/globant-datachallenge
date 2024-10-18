@@ -7,18 +7,23 @@ import jwt
 from security.auth_middleware import token_required
 from flask_swagger_ui import get_swaggerui_blueprint
 import json
+from config import config
 
 file_types = ["job", "department", "employee"]
 
 app = Flask(__name__)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Gl0b4nt12345@globant-datachallenge.c58ckue6w9yw.us-east-1.rds.amazonaws.com:5432/postgres'
+# Retrieve database uri
+database_uri = (
+    f"{config.database_config['DATABASE_DIALECT']}://{config.database_config['DATABASE_USER']}:{config.database_config['DATABASE_PASSWORD']}"
+    f"@{config.database_config['DATABASE_HOST']}:{config.database_config['DATABASE_PORT']}/{config.database_config['DATABASE_NAME']}"
+)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_uri
 
 db.init_app(app)
 startup_event()
 
 # Security using JWT Token
-app.config["JWT_SECRET_KEY"] = "datachallenge-secret-key"  # This will be my secret key
+app.config["JWT_SECRET_KEY"] = config.jwt_config["JWT_SECRET_KEY"]  # This will be my secret key
 
 # Configuración de Swagger
 SWAGGER_URL = '/swagger'
@@ -137,6 +142,7 @@ def restore_database():
     return jsonify({"message": " - ".join(messages)}), 200
 
 @app.route('/employees/by_quarter', methods=['GET'])
+@token_required
 def hired_employees_by_quarter():
     """
     Get the number of employees hired for each job and department in one year (Ex. 2021) divided by quarter.
@@ -167,6 +173,7 @@ def hired_employees_by_quarter():
     return jsonify({'data': result, **metadata}), 200
 
 @app.route('/departments/hired_above_mean', methods=['GET'])
+@token_required
 def get_departments_hired_above_mean():
         # Get pagination parameters by request
     page = request.args.get('page', 1, type=int)

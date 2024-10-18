@@ -41,9 +41,8 @@ def save_file_to_s3(df_data, bucket, s3_file_path):
     # Convert the DataFrame to CSV and store in memory buffer
     csv_buffer = StringIO()
     cleaned_df.to_csv(csv_buffer, index=False)
-    
     # Upload the CSV to S3
-    aws_s3.save_to_s3(Bucket=bucket, Key=s3_file_path, Body=csv_buffer.getvalue())
+    aws_s3.save_to_s3(output_file=csv_buffer.getvalue(), bucket=bucket, s3_file_path=s3_file_path)
     logger.info(f"File log saved as CSV to s3://{bucket}/{s3_file_path}")
 
 def save_error_log(df_errors, bucket_name, base_file_name):
@@ -56,3 +55,4 @@ def save_error_log(df_errors, bucket_name, base_file_name):
     """
     s3_file_path = generate_s3_file_path(base_file_name)
     save_file_to_s3(df_errors, bucket_name, s3_file_path)
+    return s3_file_path

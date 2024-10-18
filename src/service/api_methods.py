@@ -10,6 +10,7 @@ from dao.queries_db_reports import Queries_Db_Reports
 from validation.data_validation import validate_data
 from util.logger import save_error_log
 from util.aws_s3 import save_to_s3, get_from_s3
+from util.transversal import set_dynamic_column_names
 from validation.data_validation import jobs_schema, departments_schema, employees_schema
 import logging
 import avro.schema
@@ -81,7 +82,6 @@ def upload_file(file_type):
         return jsonify({'error': 'No file provided'}), 400
 
     file = request.files['file']
-
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
@@ -92,14 +92,18 @@ def upload_file(file_type):
         if not all(col in df_data.columns for col in required_columns):
             return jsonify({'error': f'CSV must contain {", ".join(required_columns)} columns'}), 400
         schema = schema_map.get(file_type)
-        df_valid, df_invalid = validate_data(df_data, schema)
-        db_creator = DB_CREATORS.get(file_type)
-        db_creator.factory_orm_insert_data(df_data, headers=True)
-
+        df_data_val= set_dynamic_column_names(df_data)
+        df_valid, df_invalid = validate_data(df_data_val, schema)
+        if not df_valid.empty:
+            s3_key = file_type+"s/"+str(file.filename)
+            db_creator = DB_CREATORS.get(file_type)
+            db_creator.factory_orm_insert_data(df_data, headers=False)
+        
         if not df_invalid.empty:
-            save_error_log(df_invalid)
+            s3_key = file_type+"s/"+str(file.filename)
+            s3_file_path = save_error_log(df_invalid, bucket, s3_key)
 
-        return process_validation_response(df_data, df_valid, df_invalid)
+        return process_validation_response(df_data, df_valid, df_invalid, s3_file_path)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -124,7 +128,7 @@ def get_required_columns(file_type):
         return ['id', 'name', 'datetime', 'department_id', 'job_id']
     return []
 
-def process_validation_response(df_data, df_valid, df_invalid):
+def process_validation_response(df_data, df_valid, df_invalid, s3_file_path):
     """
     Processes the validation results of the DataFrame and generates a response message
     depending on the results.
@@ -133,6 +137,7 @@ def process_validation_response(df_data, df_valid, df_invalid):
         df_data (pd.DataFrame): The original DataFrame with all the data.
         df_valid (pd.DataFrame): The DataFrame with rows that passed validation.
         df_invalid (pd.DataFrame): The DataFrame with rows that failed validation.
+        s3_file_path (str): name of the log file
 
     Returns:
         dict: A dictionary containing the message and the status of the process.
@@ -148,11 +153,11 @@ def process_validation_response(df_data, df_valid, df_invalid):
     
     # If there are both valid and invalid rows
     if not df_valid.empty and not df_invalid.empty:
-        return jsonify({"message": "Data added partially"}), 201
+        return jsonify({"message": f"Data added partially, please check the log {s3_file_path}"}), 201
 
     # If all data is invalid
     if df_data.size == df_invalid.size:
-        return jsonify({"message": "No data added, please check the file"}), 400
+        return jsonify({"message": f"No data added, please check the log {s3_file_path}"}), 400
 
     # Default case (if none of the above conditions are met)
     return jsonify({"message": "Unknown processing state"}), 400

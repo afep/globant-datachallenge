@@ -42,9 +42,6 @@ def read_file(bucket:str, file_key: str, use_headers=False):
     df_data = pd.read_csv(csv_io, header=0 if use_headers else None)
     if not use_headers:
         df_data = set_dynamic_column_names(df_data)
-    logger.debug('DATA FROM FILE ##########################################')
-    df_data.info()
-    logger.debug(df_data)
     return df_data
 
 def save_to_s3(output_file, bucket, s3_file_path):

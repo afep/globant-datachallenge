@@ -6,12 +6,14 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
+from config import config
 
 # Declarative base.
 Base = declarative_base()
-
-# Retrieve database uri
-database_uri = 'postgresql://postgres:Gl0b4nt12345@globant-datachallenge.c58ckue6w9yw.us-east-1.rds.amazonaws.com:5432/postgres'
+database_uri = (
+    f"{config.database_config['DATABASE_DIALECT']}://{config.database_config['DATABASE_USER']}:{config.database_config['DATABASE_PASSWORD']}"
+    f"@{config.database_config['DATABASE_HOST']}:{config.database_config['DATABASE_PORT']}/{config.database_config['DATABASE_NAME']}"
+)
 
 # Session local
 engine = create_engine(database_uri)
