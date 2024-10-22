@@ -98,7 +98,7 @@ def upload_file(file_type):
             s3_key = file_type+"s/"+str(file.filename)
             db_creator = DB_CREATORS.get(file_type)
             db_creator.factory_orm_insert_data(df_data, headers=False)
-        
+        s3_file_path = ''
         if not df_invalid.empty:
             s3_key = file_type+"s/"+str(file.filename)
             s3_file_path = save_error_log(df_invalid, bucket, s3_key)
@@ -218,7 +218,6 @@ def backup_table_to_avro(file_type):
         # Creating buffer in memory
         with io.BytesIO() as avro_buffer:
             writer = avro.datafile.DataFileWriter(avro_buffer, avro.io.DatumWriter(), schema)
-            print('creado writer')
             # Assuming `rows` has data
             for row in rows:
                 writer.append(serialize_row(row, file_type))
