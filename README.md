@@ -29,6 +29,7 @@ This project is a technical test for a job interview. The objective is to analyz
 ![docker](https://img.shields.io/badge/docker-0073ec?style=for-the-badge&logo=docker&logoColor=white)
 ![jwt](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=docker&logoColor=white)
 ![swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white)
+![docker](https://img.shields.io/badge/docker-257bd6?style=for-the-badge&logo=docker&logoColor=white)
 ![pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 ![tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=Tableau&logoColor=white)
 
@@ -38,6 +39,8 @@ This project is a technical test for a job interview. The objective is to analyz
 - **FLASK**: To create the API
 - **JWT**: To add security using a token
 - **SWAGGER**: To create the specification of the API
+- **DOCKER**: To create a container to deploy de app
+- **PYTEST**: To create unit test
 - **TABLEAU**: To create a Dashboard
 
 ## Installation
@@ -203,6 +206,21 @@ NOTE: The machine used is in a free tier, the ip will change
 ![github-workflow.png](images/github-workflow.png)
 _Description: Displaying the pipeline execution successfully ended._
 
+## Deploy with Docker
+
+Creating a docker image, I configured a workflow for the main branch to deploy de app using a container.
+
+This is the image in Dockerhub:
+
+![dockerhub-image.png](images/dockerhub-image.png)
+_Description: Displaying the image created in the <flask-api> repository._
+
+New workflow using docker:
+![github-workflow-docker.png](images/github-workflow-docker.png)
+_Description: Displaying the pipeline using docker execution successfully ended._
+
+NOTE: Using docker the port configured is 8080.
+
 # Unit test
 
 Using Pytest, I added some unit test to make easy future changes.
@@ -217,3 +235,6 @@ _Description: Displaying the coverage for each file with unit tests._
 Using the BI tool Tableau (I'm not an expert in Tableu, but I got the concepts from analytics perspective), I created this report to play with the data from the specific requirements.
 
 https://public.tableau.com/views/Datachallenge-Dashboard/Dashboard1?:language=es-ES&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link
+
+![tablueau_report.png](images/tablueau_report.png)
+_Description: Displaying the dashbboard._
