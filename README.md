@@ -17,6 +17,7 @@ This project is a technical test for a job interview. The objective is to analyz
 - [Backup and restore data](#backup-and-restore-data)
 - [Report endpoints](#report-endpoints)
 - [Github Deploy](#github-deploy)
+- [Unit test](#unit-test)
 - [Visual report](#visual-report)
 
 ## Used Tecnologies
@@ -28,6 +29,7 @@ This project is a technical test for a job interview. The objective is to analyz
 ![docker](https://img.shields.io/badge/docker-0073ec?style=for-the-badge&logo=docker&logoColor=white)
 ![jwt](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=docker&logoColor=white)
 ![swagger](https://img.shields.io/badge/-Swagger-%23Clojure?style=for-the-badge&logo=swagger&logoColor=white)
+![pytest](https://img.shields.io/badge/Pytest-0A9EDC?style=for-the-badge&logo=pytest&logoColor=white)
 ![tableau](https://img.shields.io/badge/Tableau-E97627?style=for-the-badge&logo=Tableau&logoColor=white)
 
 - **Python**: Main Lenguage used.
@@ -201,8 +203,17 @@ NOTE: The machine used is in a free tier, the ip will change
 ![github-workflow.png](images/github-workflow.png)
 _Description: Displaying the pipeline execution successfully ended._
 
+# Unit test
+
+Using pytest, I added some unit test to make easy future changes.
+
+I created the coverage report:
+
+![coverate_report.png](images/coverage-report.png)
+_Description: Displaying the coverage for each file with unit tests._
+
 # Visual Report
 
-Using the BI tool Tableau (Not an expert), I created this report to play with the data from the specific requeriments.
+Using the BI tool Tableau (Not an expert in tableu, but I got the concepts from analatycs perspective), I created this report to play with the data from the specific requeriments.
 
 https://public.tableau.com/views/Datachallenge-Dashboard/Dashboard1?:language=es-ES&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link
