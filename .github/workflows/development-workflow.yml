@@ -59,43 +59,44 @@ jobs:
           FLASK_ENV=${{secrets.FLASK_ENV}} python src/app.py &
           sleep 5
           curl http://127.0.0.1:5000/
-  DeployDev:
-    name: Deploy to Dev
-    # if: github.event_name == 'pull_request'
-    needs: [Test-Local]
-    runs-on: ubuntu-latest
-    environment:
-      name: Development
 
-    steps:
-      - name: Deploy
-        run: echo I am deploying the datachallenge api to AWS
+#   DeployDev:
+#     name: Deploy to Dev
+#     # if: github.event_name == 'pull_request'
+#     needs: [Test-Local]
+#     runs-on: ubuntu-latest
+#     environment:
+#       name: Development
 
-      - name: Deploy in EC2
-        env:
-          PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
-          HOST_NAME: ${{ secrets.HOST_NAME  }}
-          USER_NAME: ${{ secrets.USER_NAME  }}
-          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
-          APP_DIR: ${{secrets.APP_DIR}}
-          SERVICE_NAME: ${{secrets.SERVICE_NAME}}
+#     steps:
+#       - name: Deploy
+#         run: echo I am deploying the datachallenge api to AWS
 
-        run: |
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-          ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOST_NAME} "
-            cd ${APP_DIR} &&
-            git pull &&
-            echo ${USER_PASSWORD} | sudo -S systemctl restart ${SERVICE_NAME} "
+#       - name: Deploy in EC2
+#         env:
+#           PRIVATE_KEY: ${{ secrets.AWS_PRIVATE_KEY  }}
+#           HOST_NAME: ${{ secrets.HOST_NAME  }}
+#           USER_NAME: ${{ secrets.USER_NAME  }}
+#           USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+#           APP_DIR: ${{secrets.APP_DIR}}
+#           SERVICE_NAME: ${{secrets.SERVICE_NAME}}
 
-  Test-Remote:
-    name: Test Remote Deployment
-    needs: [DeployDev]
-    runs-on: ubuntu-latest
-    environment:
-      name: Development
+#         run: |
+#           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+#           ssh -o StrictHostKeyChecking=no -i private_key ${USER_NAME}@${HOST_NAME} "
+#             cd ${APP_DIR} &&
+#             git pull &&
+#             echo ${USER_PASSWORD} | sudo -S systemctl restart ${SERVICE_NAME} "
 
-    steps:
-      - name: Test application
-        run: |
-          sleep 5
-          curl ${{ secrets.HOST_NAME  }}:${{ secrets.PORT  }}
+#   Test-Remote:
+#     name: Test Remote Deployment
+#     needs: [DeployDev]
+#     runs-on: ubuntu-latest
+#     environment:
+#       name: Development
+
+#     steps:
+#       - name: Test application
+#         run: |
+#           sleep 5
+#           curl ${{ secrets.HOST_NAME  }}:${{ secrets.PORT  }}
