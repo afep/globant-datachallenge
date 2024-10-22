@@ -1,5 +1,5 @@
-# Use the official Python 3.9 slim image as a base
-FROM python:3.9-slim
+# Use the official Python 3.12 slim image as a base
+FROM python:3.12-slim
 
 # Set the working directory inside the container
 WORKDIR /src
@@ -16,8 +16,11 @@ COPY . .
 # Expose the port the app runs on
 EXPOSE 5000
 
+# Set PYTHONPATH for modules
+ENV PYTHONPATH=/app/src
+
 # Set environment variables for Flask
-ENV FLASK_APP=app.py
+ENV FLASK_APP=src.app
 ENV FLASK_ENV=production
 
 # Command to run the application
